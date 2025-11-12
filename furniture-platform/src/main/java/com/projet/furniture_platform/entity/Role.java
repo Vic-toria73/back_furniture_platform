@@ -1,4 +1,6 @@
 package com.projet.furniture_platform.entity;
 
-public class Role {
+public enum Role {
+    USER,
+    ADMIN,
 }
