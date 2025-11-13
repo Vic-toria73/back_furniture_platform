@@ -1,6 +1,7 @@
 package com.projet.furniture_platform.controller;
 
 import com.projet.furniture_platform.configuration.JwtUtils;
+import com.projet.furniture_platform.entity.Role;
 import com.projet.furniture_platform.entity.User;
 import com.projet.furniture_platform.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -27,6 +28,11 @@ public class AuthController {
     private final AuthenticationManager authenticationManager;
     private final JwtUtils jwtUtils;
 
+    @GetMapping("/test")
+    public String test() {
+        return "AuthController OK";
+    }
+
     @PostMapping("/login")
     public ResponseEntity<?> loginUser(@RequestBody User user) {
         try {
@@ -49,6 +55,40 @@ public class AuthController {
                             "error", "Authentication failed",
                             "message", ex.getMessage(),
                             "exception", ex.getClass().getName()
+                    ));
+        }
+    }
+
+    @PostMapping("/register")
+    public ResponseEntity<?> registerUser(@RequestBody User user) {
+        try {
+            // Vérifie si un utilisateur existe déjà avec cet email
+            if (userRepository.findByEmail(user.getEmail()).isPresent()) {
+                return ResponseEntity.status(HttpStatus.CONFLICT)
+                        .body(Map.of("error", "Cet email est déjà utilisé"));
+            }
+
+            // Encode le mot de passe
+            user.setPassword(passwordEncoder.encode(user.getPassword()));
+
+            // Définit un rôle par défaut si non fourni
+            if (user.getRole() == null) {
+                user.setRole(Role.USER);
+            }
+
+            User savedUser = userRepository.save(user);
+
+            return ResponseEntity.status(HttpStatus.CREATED)
+                    .body(Map.of(
+                            "message", "Utilisateur créé avec succès",
+                            "email", savedUser.getEmail()
+                    ));
+
+        } catch (Exception ex) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of(
+                            "error", "Erreur lors de la création de l'utilisateur",
+                            "message", ex.getMessage()
                     ));
         }
     }
