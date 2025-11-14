@@ -1,7 +1,9 @@
 package com.projet.furniture_platform.entity;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 import lombok.*;
+
 import java.time.LocalDateTime;
 
 @Entity
@@ -16,14 +18,15 @@ public class Picture {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
-    @Column(name = "url", nullable = false)
+    @Column(nullable = false)
     private String url;
 
-    @Column(name = "alt_text")
     private String altText;
 
-    @Column(name = "furniture_id", nullable = false)
-    private Integer furnitureId;
+    @ManyToOne
+    @JoinColumn(name = "furniture_id", nullable = false)
+    @JsonBackReference
+    private Furniture furniture;
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
@@ -31,16 +34,14 @@ public class Picture {
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
 
-    // Mise à jour automatique de `updated_at` avant une mise à jour
-    @PreUpdate
-    public void preUpdate() {
-        this.updatedAt = LocalDateTime.now();
-    }
-
-    // Initialisation automatique de `created_at` et `updated_at` avant la création
     @PrePersist
     public void prePersist() {
-        this.createdAt = LocalDateTime.now();
-        this.updatedAt = LocalDateTime.now();
+        createdAt = LocalDateTime.now();
+        updatedAt = LocalDateTime.now();
+    }
+
+    @PreUpdate
+    public void preUpdate() {
+        updatedAt = LocalDateTime.now();
     }
 }
