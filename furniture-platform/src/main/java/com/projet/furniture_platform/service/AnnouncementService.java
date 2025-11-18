@@ -2,7 +2,9 @@ package com.projet.furniture_platform.service;
 
 import com.projet.furniture_platform.DTO.FurnitureDTO;
 import com.projet.furniture_platform.entity.Furniture;
+import com.projet.furniture_platform.entity.Type;
 import com.projet.furniture_platform.repository.FurnitureRepository;
+import com.projet.furniture_platform.repository.TypeRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -13,6 +15,7 @@ import java.util.List;
 public class AnnouncementService {
 
     private final FurnitureRepository furnitureRepository;
+    private final TypeRepository typeRepository;
 
     // -----------------------------------------------------------
     // 🔹 CREATE / POST → Créer une annonce (= un meuble)
@@ -21,7 +24,12 @@ public class AnnouncementService {
 
         Furniture furniture = new Furniture();
         furniture.setName(dto.getName());
-        furniture.setTypeId(dto.getTypeId());
+
+        // 🔥 Charger le Type depuis la DB
+        Type type = typeRepository.findById(dto.getTypeId())
+                .orElseThrow(() -> new RuntimeException("Type not found"));
+        furniture.setType(type);
+
         furniture.setDescription(dto.getDescription());
         furniture.setHeight(dto.getHeight());
         furniture.setWidth(dto.getWidth());

@@ -34,10 +34,11 @@ public class AnnouncementController {
     }
 
     // -----------------------------------------------------------
-    // 🔹 GET → Meuble par ID (uniquement si disponible)
+    // 🔹 GET → Meuble par ID (status = AVAILABLE)
     // -----------------------------------------------------------
     @GetMapping("/{id}")
     public ResponseEntity<Furniture> getAvailableById(@PathVariable Integer id) {
+
         Furniture furniture = announcementService.getAvailableById(id);
 
         if (furniture == null)
@@ -46,3 +47,4 @@ public class AnnouncementController {
         return ResponseEntity.ok(furniture);
     }
 }
+

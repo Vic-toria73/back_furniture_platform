@@ -6,6 +6,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
@@ -41,16 +42,29 @@ public class SecurityConfig {
                 .csrf(AbstractHttpConfigurer::disable)
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/auth/**").permitAll()          // Auth publique
-                        .requestMatchers("/api/announcements/**").permitAll() // Annonces publiques
-                        .requestMatchers("/api/furniture/**").permitAll()// Furniture PUBLIC !
+
+                        // Authentication publique
+                        .requestMatchers("/api/auth/**").permitAll()
+
+                        // Annonces publiques
+                        .requestMatchers("/api/announcements/**").permitAll()
+
+                        // Meubles PUBLIC : catalogue + détail
+                        .requestMatchers(HttpMethod.GET, "/api/furniture/**").permitAll()
+
+                        // Images & types PUBLICS
                         .requestMatchers("/api/pictures/**").permitAll()
+                        .requestMatchers("/api/types/**").permitAll()
+
                         .requestMatchers("/error").permitAll()
-                        .anyRequest().authenticated()                         // Tout le reste nécessite un token
+
+                        // Tout le reste nécessite une authentification
+                        .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
                 .build();
     }
+
 
     @Bean
     public PasswordEncoder passwordEncoder() {
