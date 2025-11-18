@@ -1,5 +1,6 @@
 package com.projet.furniture_platform.entity;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.*;
@@ -23,8 +24,10 @@ public class Furniture {
     @Column(nullable = false)
     private String name;
 
-    @Column(name = "type_id", nullable = false)
-    private Integer typeId;
+    @ManyToOne
+    @JoinColumn(name = "type_id", nullable = false)
+    @JsonManagedReference
+    private Type type;
 
     @Column(columnDefinition = "TEXT")
     private String description;
@@ -52,17 +55,14 @@ public class Furniture {
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
 
-    // ------------------------------------------------------
-    // 🔗 RELATION INVERSE : liste de photos du meuble
-    // ------------------------------------------------------
+    //  RELATION INVERSE : liste de photos du meuble
     @OneToMany(mappedBy = "furniture", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonManagedReference
     private List<Picture> pictures;
 
 
-    // ------------------------------------------------------
-    // ⏱ Gestion automatique des timestamps
-    // ------------------------------------------------------
+
+    //  Gestion automatique des timestamps
     @PrePersist
     public void prePersist() {
         this.createdAt = LocalDateTime.now();
@@ -74,16 +74,13 @@ public class Furniture {
         this.updatedAt = LocalDateTime.now();
     }
 
-    // ------------------------------------------------------
-    // 🔐 Enum status conforme à ton schéma
-    // ------------------------------------------------------
     public enum Status {
-        DRAFT,        // Le meuble est créé mais pas encore soumis
-        PENDING,      // L'annonce est en attente de validation
-        VALIDATED,    // L'équipe a validé l'annonce
-        AVAILABLE,    // Visible et disponible à l'achat
-        RESERVED,     // Réservé par un client mais pas encore acheté
-        SOLD,         // L'objet est vendu
-        DELETED       // Supprimé (soft delete)
+        DRAFT,
+        PENDING,
+        VALIDATED,
+        AVAILABLE,
+        RESERVED,
+        SOLD,
+        DELETED
     }
 }

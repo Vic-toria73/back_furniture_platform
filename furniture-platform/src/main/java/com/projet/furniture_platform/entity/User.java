@@ -29,10 +29,10 @@ public class User implements UserDetails {
     @Column(nullable = false)
     private String password;
 
-    @Column(nullable = false)
+    @Column(name = "first_name", nullable=false)
     private String firstName;
 
-    @Column(nullable = false)
+    @Column(name = "last_name", nullable=false)
     private String lastName;
 
     @Enumerated(EnumType.STRING)
@@ -48,6 +48,7 @@ public class User implements UserDetails {
     @PrePersist
     protected void onCreate() {
         createdAt = LocalDateTime.now();
+        updatedAt = LocalDateTime.now();
     }
 
     @PreUpdate

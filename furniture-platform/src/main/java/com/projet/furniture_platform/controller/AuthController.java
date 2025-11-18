@@ -1,6 +1,9 @@
 package com.projet.furniture_platform.controller;
 
+import com.projet.furniture_platform.DTO.LoginRequest;
+import com.projet.furniture_platform.DTO.RegisterRequest;
 import com.projet.furniture_platform.configuration.JwtUtils;
+import com.projet.furniture_platform.entity.Role;
 import com.projet.furniture_platform.entity.User;
 import com.projet.furniture_platform.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -27,29 +30,57 @@ public class AuthController {
     private final AuthenticationManager authenticationManager;
     private final JwtUtils jwtUtils;
 
+    @PostMapping("/register")
+    public ResponseEntity<?> registerUser(@RequestBody RegisterRequest req) {
+
+        // Vérifier si l'email existe déjà
+        if (userRepository.existsByEmail(req.email())) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body("Cet email est déjà utilisé");
+        }
+
+        // Construire et sauvegarder l'utilisateur
+        User user = new User();
+        user.setEmail(req.email());
+        user.setFirstName(req.firstname());
+        user.setLastName(req.lastname());
+        user.setPassword(passwordEncoder.encode(req.password()));
+        user.setRole(Role.USER);
+
+        userRepository.save(user);
+
+        return ResponseEntity.ok("Utilisateur créé !");
+    }
+
     @PostMapping("/login")
-    public ResponseEntity<?> loginUser(@RequestBody User user) {
+    public ResponseEntity<?> loginUser(@RequestBody LoginRequest request) {
         try {
-            Authentication authentication = authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(user.getEmail(), user.getPassword()));
-            if (authentication.isAuthenticated()) {
-                UserDetails userDetails = (UserDetails) authentication.getPrincipal();
+            Authentication authentication = authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(request.email(), request.password())
+            );
 
-                Map<String, Object> authData = new HashMap<>();
-                authData.put("token", jwtUtils.generateToken(userDetails));
-                authData.put("type", "Bearer");
+            UserDetails userDetails = (UserDetails) authentication.getPrincipal();
+            User user = userRepository.findByEmail(request.email()).orElseThrow();
 
-                return ResponseEntity.ok(authData);
-            }
+            String token = jwtUtils.generateToken(userDetails);
 
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid username or password");
-        } catch(Exception ex) {
-            return ResponseEntity
-                    .status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(Map.of(
+            Map<String, Object> authData = new HashMap<>();
+            authData.put("token", token);
+            authData.put("type", "Bearer");
+            authData.put("role", user.getRole());
+            authData.put("id", user.getId());
+
+            return ResponseEntity.ok(authData);
+
+        } catch (Exception ex) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(
+                    Map.of(
                             "error", "Authentication failed",
-                            "message", ex.getMessage(),
-                            "exception", ex.getClass().getName()
-                    ));
+                            "message", "Identifiants incorrects",
+                            "exception", ex.getClass().getSimpleName()
+                    )
+            );
         }
     }
+
 }

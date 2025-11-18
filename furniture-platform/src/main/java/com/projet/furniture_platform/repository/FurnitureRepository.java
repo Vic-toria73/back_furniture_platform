@@ -11,4 +11,7 @@ public interface FurnitureRepository extends JpaRepository<Furniture, Integer> {
     List<Furniture> findByStatus(Furniture.Status status);
 
     Optional<Furniture> findByIdAndStatus(Integer id, Furniture.Status status);
+
+    List<Furniture> findByStatusIn(List<Furniture.Status> statuses);
+
 }
