@@ -1,6 +1,5 @@
 package com.projet.furniture_platform.entity;
 
-import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.*;
@@ -21,52 +20,62 @@ public class Furniture {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
-    @Column(nullable = false)
     private String name;
 
+    // TYPE
     @ManyToOne
     @JoinColumn(name = "type_id", nullable = false)
-    @JsonManagedReference
     private Type type;
 
+    // DESCRIPTION
     @Column(columnDefinition = "TEXT")
     private String description;
 
     private BigDecimal height;
     private BigDecimal width;
 
+    // COLOR (optionnel)
+    @ManyToOne
+    @JoinColumn(name = "color_id")
+    private Color color;
+
+    // MATERIAL (optionnel)
+    @ManyToOne
+    @JoinColumn(name = "material_id")
+    private Material material;
+
     private BigDecimal price;
 
     @Enumerated(EnumType.STRING)
     private Status status;
 
-    @Column(name = "order_id")
-    private Integer orderId;
+    // ORDER — nullable car il n’existe pas au dépôt
+    @ManyToOne
+    @JoinColumn(name = "order_id")
+    private Order order;
 
+    // ADDRESS — simple clé étrangère
     @Column(name = "address_id")
     private Integer addressId;
 
-    @Column(name = "user_id")
+    @Column(name = "user_id", nullable = false)
     private Integer userId;
 
-    @Column(name = "created_at", nullable = false, updatable = false)
+    @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
-    @Column(name = "updated_at", nullable = false)
+    @Column(nullable = false)
     private LocalDateTime updatedAt;
 
-    //  RELATION INVERSE : liste de photos du meuble
     @OneToMany(mappedBy = "furniture", cascade = CascadeType.ALL, orphanRemoval = true)
-    @JsonManagedReference
+    @JsonManagedReference   // ← obligatoire pour casser la récursion JSON
     private List<Picture> pictures;
 
-
-
-    //  Gestion automatique des timestamps
     @PrePersist
     public void prePersist() {
         this.createdAt = LocalDateTime.now();
         this.updatedAt = LocalDateTime.now();
+        if (this.status == null) this.status = Status.AVAILABLE;
     }
 
     @PreUpdate

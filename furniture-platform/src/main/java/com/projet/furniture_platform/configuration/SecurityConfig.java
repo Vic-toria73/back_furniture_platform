@@ -53,8 +53,12 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/furniture/**").permitAll()
 
                         // Images & types PUBLICS
-                        .requestMatchers("/api/pictures/**").permitAll()
-                        .requestMatchers("/api/types/**").permitAll()
+                        .requestMatchers(
+                                "/api/types/**",
+                                "/api/color/**",
+                                "/api/material/**",
+                                "/api/furniture/create"
+                        ).permitAll()
 
                         .requestMatchers("/error").permitAll()
 

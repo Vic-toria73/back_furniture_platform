@@ -3,7 +3,9 @@ package com.projet.furniture_platform.service;
 import com.projet.furniture_platform.DTO.FurnitureDTO;
 import com.projet.furniture_platform.entity.Furniture;
 import com.projet.furniture_platform.entity.Type;
+import com.projet.furniture_platform.repository.ColorRepository;
 import com.projet.furniture_platform.repository.FurnitureRepository;
+import com.projet.furniture_platform.repository.MaterialRepository;
 import com.projet.furniture_platform.repository.TypeRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -16,48 +18,58 @@ public class AnnouncementService {
 
     private final FurnitureRepository furnitureRepository;
     private final TypeRepository typeRepository;
+    private final ColorRepository colorRepository;
+    private final MaterialRepository materialRepository;
 
-    // -----------------------------------------------------------
-    // 🔹 CREATE / POST → Créer une annonce (= un meuble)
-    // -----------------------------------------------------------
     public Furniture create(FurnitureDTO dto) {
 
         Furniture furniture = new Furniture();
         furniture.setName(dto.getName());
 
-        // 🔥 Charger le Type depuis la DB
+        // Type obligatoire
         Type type = typeRepository.findById(dto.getTypeId())
                 .orElseThrow(() -> new RuntimeException("Type not found"));
         furniture.setType(type);
+
+        // Couleur (optionnelle)
+        if (dto.getColorId() != null) {
+            furniture.setColor(
+                    colorRepository.findById(dto.getColorId())
+                            .orElseThrow(() -> new RuntimeException("Color not found"))
+            );
+        }
+
+        // Matériau (optionnel)
+        if (dto.getMaterialId() != null) {
+            furniture.setMaterial(
+                    materialRepository.findById(dto.getMaterialId())
+                            .orElseThrow(() -> new RuntimeException("Material not found"))
+            );
+        }
 
         furniture.setDescription(dto.getDescription());
         furniture.setHeight(dto.getHeight());
         furniture.setWidth(dto.getWidth());
         furniture.setPrice(dto.getPrice());
-        furniture.setOrderId(dto.getOrderId());
-        furniture.setAddressId(dto.getAddressId());
+
+        // OrderId → il n'existe qu'en cas d'achat !
+        furniture.setOrder(null);
+
+        // Adresse : à ne gérer que si tu as une table address
+        furniture.setAddressId(null);
+
         furniture.setUserId(dto.getUserId());
 
-        // Status par défaut
-        furniture.setStatus(
-                dto.getStatus() != null ?
-                        dto.getStatus() :
-                        Furniture.Status.AVAILABLE
-        );
+        // Statut par défaut
+        furniture.setStatus(Furniture.Status.AVAILABLE);
 
         return furnitureRepository.save(furniture);
     }
 
-    // -----------------------------------------------------------
-    // 🔹 GET → Retourne toutes les annonces validées
-    // -----------------------------------------------------------
     public List<Furniture> getAllAvailable() {
         return furnitureRepository.findByStatus(Furniture.Status.AVAILABLE);
     }
 
-    // -----------------------------------------------------------
-    // 🔹 GET → Retourne un meuble par ID S’IL EST DISPONIBLE
-    // -----------------------------------------------------------
     public Furniture getAvailableById(Integer id) {
         return furnitureRepository.findByIdAndStatus(id, Furniture.Status.AVAILABLE)
                 .orElse(null);

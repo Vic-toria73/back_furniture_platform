@@ -7,6 +7,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -83,4 +84,24 @@ public class FurnitureController {
             return ResponseEntity.badRequest().build();
         }
     }
+
+    @PostMapping(value = "/create", consumes = "multipart/form-data")
+    public ResponseEntity<?> createFurnitureWithImages(
+            @RequestParam("name") String name,
+            @RequestParam("typeId") Integer typeId,
+            @RequestParam("description") String description,
+            @RequestParam("height") String height,
+            @RequestParam("width") String width,
+            @RequestParam("price") String price,
+            @RequestParam("userId") Integer userId,
+            @RequestParam("colorId") Integer colorId,
+            @RequestParam("materialId") Integer materialId,
+            @RequestPart("photos") List<MultipartFile> photos
+    ) {
+        Furniture furniture = furnitureService.createFurnitureFromUser(
+                name, typeId, description, height, width, price, userId, colorId, materialId, photos
+        );
+        return ResponseEntity.ok(furniture);
+    }
+
 }
