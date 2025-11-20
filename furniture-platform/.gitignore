@@ -38,3 +38,8 @@ out/
 ### VS Code ###
 .vscode/
 
+uploads/
+*.jpg
+*.jpeg
+*.png
+*.mp4
