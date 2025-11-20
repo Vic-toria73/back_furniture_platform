@@ -43,26 +43,26 @@ public class SecurityConfig {
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .authorizeHttpRequests(auth -> auth
 
-                        // Authentication publique
+                        // Authentification publique
                         .requestMatchers("/api/auth/**").permitAll()
 
-                        // Annonces publiques
-                        .requestMatchers("/api/announcements/**").permitAll()
+                        // Meubles PUBLIC
+                        .requestMatchers(HttpMethod.GET, "/api/furniture/public/**").permitAll()
 
-                        // Meubles PUBLIC : catalogue + détail
-                        .requestMatchers(HttpMethod.GET, "/api/furniture/**").permitAll()
+                        // Types, couleurs, matériaux (publics)
+                        .requestMatchers("/api/types/**", "/api/color/**", "/api/material/**")
+                        .permitAll()
 
-                        // Images & types PUBLICS
-                        .requestMatchers(
-                                "/api/types/**",
-                                "/api/color/**",
-                                "/api/material/**",
-                                "/api/furniture/create"
-                        ).permitAll()
+                        // Création d’annonce → USER ou ADMIN uniquement
+                        .requestMatchers(HttpMethod.POST, "/api/furniture/create")
+                        .hasAnyRole("USER", "ADMIN")
 
-                        .requestMatchers("/error").permitAll()
+                        // Admin-only
+                        .requestMatchers("/api/furniture/admin/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.PATCH, "/api/furniture/*/status").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.DELETE, "/api/furniture/*").hasRole("ADMIN")
 
-                        // Tout le reste nécessite une authentification
+                        // Le reste nécessite d’être connecté
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
@@ -92,7 +92,7 @@ public class SecurityConfig {
                 .toList();
 
         config.setAllowedOrigins(origins);
-        config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(List.of("*"));
         config.setAllowCredentials(true);
 

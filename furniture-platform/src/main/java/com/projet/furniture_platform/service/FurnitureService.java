@@ -21,7 +21,6 @@ public class FurnitureService {
     private final PictureRepository pictureRepository;
     private final ColorRepository colorRepository;
     private final MaterialRepository materialRepository;
-    private final UserRepository userRepository; // <-- AJOUT ICI
 
     public Furniture addFurniture(Furniture furniture) {
         return furnitureRepository.save(furniture);
@@ -64,9 +63,21 @@ public class FurnitureService {
         ));
     }
 
+    // -----------------------------
+    // DELETE (SOFT DELETE) — met status = DELETED
+    // -----------------------------
+    public void softDeleteFurniture(Integer id) {
+
+        Furniture furniture = furnitureRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Furniture not found"));
+
+        furniture.setStatus(Furniture.Status.DELETED);
+
+        furnitureRepository.save(furniture);
+    }
 
     // -----------------------------
-    // 🔥 CREATION D’ANNONCE PAR USER
+    // CREATION D’ANNONCE PAR USER
     // -----------------------------
     public Furniture createFurnitureFromUser(
             String name,
@@ -75,7 +86,7 @@ public class FurnitureService {
             String height,
             String width,
             String price,
-            Integer userId,
+            Long userId,
             Integer colorId,
             Integer materialId,
             List<MultipartFile> photos

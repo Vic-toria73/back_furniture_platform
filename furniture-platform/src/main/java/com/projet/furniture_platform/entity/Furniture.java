@@ -59,7 +59,7 @@ public class Furniture {
     private Integer addressId;
 
     @Column(name = "user_id", nullable = false)
-    private Integer userId;
+    private Long userId;
 
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;

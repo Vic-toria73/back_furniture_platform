@@ -1,15 +1,19 @@
 package com.projet.furniture_platform.controller;
 
 import com.projet.furniture_platform.DTO.StatusRequest;
+import com.projet.furniture_platform.security.CustomUserDetails;
 import com.projet.furniture_platform.entity.Furniture;
 import com.projet.furniture_platform.service.FurnitureService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
+
+import static org.springframework.security.config.Elements.JWT;
 
 @RestController
 @RequestMapping("/api/furniture")
@@ -35,6 +39,29 @@ public class FurnitureController {
         return ResponseEntity.ok(furniture);
     }
 
+    // création d'une annonce
+    @PostMapping(value = "/create", consumes = "multipart/form-data")
+    public ResponseEntity<?> createFurnitureWithImages(
+            @RequestParam("name") String name,
+            @RequestParam("typeId") Integer typeId,
+            @RequestParam("description") String description,
+            @RequestParam("height") String height,
+            @RequestParam("width") String width,
+            @RequestParam("price") String price,
+            @RequestParam("colorId") Integer colorId,
+            @RequestParam("materialId") Integer materialId,
+            @RequestPart("photos") List<MultipartFile> photos
+    ) {
+        CustomUserDetails userDetails =
+                (CustomUserDetails) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+
+        Long userId = userDetails.getId();
+
+        Furniture furniture = furnitureService.createFurnitureFromUser(
+                name, typeId, description, height, width, price, userId, colorId, materialId, photos
+        );
+        return ResponseEntity.ok(furniture);
+    }
 
     // ------------------ ADMIN ------------------
 
@@ -85,23 +112,12 @@ public class FurnitureController {
         }
     }
 
-    @PostMapping(value = "/create", consumes = "multipart/form-data")
-    public ResponseEntity<?> createFurnitureWithImages(
-            @RequestParam("name") String name,
-            @RequestParam("typeId") Integer typeId,
-            @RequestParam("description") String description,
-            @RequestParam("height") String height,
-            @RequestParam("width") String width,
-            @RequestParam("price") String price,
-            @RequestParam("userId") Integer userId,
-            @RequestParam("colorId") Integer colorId,
-            @RequestParam("materialId") Integer materialId,
-            @RequestPart("photos") List<MultipartFile> photos
-    ) {
-        Furniture furniture = furnitureService.createFurnitureFromUser(
-                name, typeId, description, height, width, price, userId, colorId, materialId, photos
-        );
-        return ResponseEntity.ok(furniture);
+    // Delete une annonce
+    @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Void> deleteFurniture(@PathVariable Integer id) {
+        furnitureService.softDeleteFurniture(id);
+        return ResponseEntity.noContent().build();
     }
 
 }

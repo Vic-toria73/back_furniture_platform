@@ -25,6 +25,5 @@ public class FurnitureDTO {
     private Integer addressId;  // optionnel
     private Integer userId;     // obligatoire
 
-    // orderId supprimé !
 }
 
