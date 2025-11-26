@@ -1,4 +1,4 @@
-package com.projet.furniture_platform.Security;
+package com.projet.furniture_platform.security;
 
 import com.projet.furniture_platform.configuration.JwtUtils;
 import com.projet.furniture_platform.service.CustomUserDetailsService;
@@ -28,6 +28,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             HttpServletResponse response,
             FilterChain filterChain
     ) throws ServletException, IOException {
+
+        if ("OPTIONS".equalsIgnoreCase(request.getMethod())) {
+            filterChain.doFilter(request, response);
+            return;
+        }
+
         String header = request.getHeader("Authorization");
 
         if (header != null && header.startsWith("Bearer ")) {

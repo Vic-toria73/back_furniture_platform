@@ -4,7 +4,6 @@ import com.projet.furniture_platform.entity.User;
 import lombok.Getter;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
-
 import java.util.Collection;
 
 @Getter
@@ -49,3 +48,4 @@ public class CustomUserDetails implements UserDetails {
     @Override
     public boolean isEnabled() { return true; }
 }
+

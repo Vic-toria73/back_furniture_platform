@@ -1,6 +1,6 @@
 package com.projet.furniture_platform.configuration;
 
-import com.projet.furniture_platform.Security.JwtAuthenticationFilter;
+import com.projet.furniture_platform.security.JwtAuthenticationFilter;
 import com.projet.furniture_platform.service.CustomUserDetailsService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
@@ -43,27 +43,32 @@ public class SecurityConfig {
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .authorizeHttpRequests(auth -> auth
 
-                        // Authentification publique
-                        .requestMatchers("/api/auth/**").permitAll()
+                                .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
 
-                        // Meubles PUBLIC
-                        .requestMatchers(HttpMethod.GET, "/api/furniture/public/**").permitAll()
+                                .requestMatchers("/api/auth/**").permitAll()
+                                .requestMatchers("/uploads/**").permitAll()
+                                .requestMatchers(HttpMethod.GET, "/api/furniture/public/**").permitAll()
+                                .requestMatchers("/api/types/**", "/api/color/**", "/api/material/**").permitAll()
 
-                        // Types, couleurs, matériaux (publics)
-                        .requestMatchers("/api/types/**", "/api/color/**", "/api/material/**")
-                        .permitAll()
+                // USER : peut modifier ses propres furnitures
+                                .requestMatchers(HttpMethod.PUT, "/api/furniture/user/*")
+                                .hasAnyRole("USER", "ADMIN")
 
-                        // Création d’annonce → USER ou ADMIN uniquement
-                        .requestMatchers(HttpMethod.POST, "/api/furniture/create")
-                        .hasAnyRole("USER", "ADMIN")
+                // USER : créer
+                                .requestMatchers(HttpMethod.POST, "/api/furniture/create")
+                                .hasAnyRole("USER", "ADMIN")
 
-                        // Admin-only
-                        .requestMatchers("/api/furniture/admin/**").hasRole("ADMIN")
-                        .requestMatchers(HttpMethod.PATCH, "/api/furniture/*/status").hasRole("ADMIN")
-                        .requestMatchers(HttpMethod.DELETE, "/api/furniture/*").hasRole("ADMIN")
+                // USER : routes personnelles
+                                .requestMatchers("/api/furniture/user/**").authenticated()
 
-                        // Le reste nécessite d’être connecté
-                        .anyRequest().authenticated()
+                // ADMIN : gestion complète
+                                .requestMatchers("/api/furniture/admin/**").hasRole("ADMIN")
+                                .requestMatchers(HttpMethod.PATCH, "/api/furniture/*/status").hasRole("ADMIN")
+                                .requestMatchers(HttpMethod.PUT, "/api/furniture/*").hasRole("ADMIN")
+                                .requestMatchers(HttpMethod.DELETE, "/api/furniture/*").hasRole("ADMIN")
+
+                                .anyRequest().authenticated()
+
                 )
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
                 .build();
@@ -86,14 +91,20 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
 
-        // Trim des espaces pour éviter les problèmes
+        // Origines autorisées (depuis application.properties)
         List<String> origins = Arrays.stream(allowedOrigins.split(","))
                 .map(String::trim)
                 .toList();
-
         config.setAllowedOrigins(origins);
+
+        // Méthodes autorisées
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
+
+        // Headers autorisés
         config.setAllowedHeaders(List.of("*"));
+
+        config.setExposedHeaders(List.of("Authorization"));
+
         config.setAllowCredentials(true);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
@@ -101,4 +112,6 @@ public class SecurityConfig {
 
         return source;
     }
+
+
 }

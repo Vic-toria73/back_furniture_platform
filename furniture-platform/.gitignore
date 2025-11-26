@@ -38,7 +38,7 @@ out/
 ### VS Code ###
 .vscode/
 
-uploads/
+src/main/resources/static/uploads/
 *.jpg
 *.jpeg
 *.png

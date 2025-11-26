@@ -1,10 +1,10 @@
 package com.projet.furniture_platform.service;
 
+import com.projet.furniture_platform.DTO.FurnitureUpdateRequest;
 import com.projet.furniture_platform.entity.*;
 import com.projet.furniture_platform.repository.*;
 
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -27,26 +27,104 @@ public class FurnitureService {
     }
 
     public List<Furniture> getAll() {
-        return furnitureRepository.findAll();
+        return furnitureRepository.findAllWithRelationsBy();
     }
 
     public Furniture getById(Integer id) {
-        return furnitureRepository.findById(id).orElse(null);
+        return furnitureRepository.findWithRelationsById(id).orElse(null);
     }
 
     // -----------------------------
-    // UPDATE STATUS avec changement user_id
+    // UPDATE STATUS
     // -----------------------------
     public Furniture updateStatus(Integer id, Furniture.Status status) {
+        Furniture furniture = furnitureRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Furniture not found"));
+        furniture.setStatus(status);
+        return furnitureRepository.save(furniture);
+    }
 
+    // UPDATE FURNITURE (NOUVEAU)
+    public Furniture updateFurniture(Integer id, FurnitureUpdateRequest request) {
         Furniture furniture = furnitureRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Furniture not found"));
 
-        // Mise à jour du statut
-        furniture.setStatus(status);
+        if (request.getName() != null) {
+            furniture.setName(request.getName());
+        }
+        if (request.getPrice() != null) {
+            furniture.setPrice(request.getPrice());
+        }
+        if (request.getDescription() != null) {
+            furniture.setDescription(request.getDescription());
+        }
+        if (request.getTypeId() != null) {
+            Type type = typeRepository.findById(request.getTypeId())
+                    .orElseThrow(() -> new RuntimeException("Type not found"));
+            furniture.setType(type);
+        }
+        if (request.getColorId() != null) {
+            Color color = colorRepository.findById(request.getColorId())
+                    .orElseThrow(() -> new RuntimeException("Color not found"));
+            furniture.setColor(color);
+        }
+        if (request.getMaterialId() != null) {
+            Material material = materialRepository.findById(request.getMaterialId())
+                    .orElseThrow(() -> new RuntimeException("Material not found"));
+            furniture.setMaterial(material);
+        }
 
         return furnitureRepository.save(furniture);
     }
+
+    // UPDATE FURNITURE BY USER (ONLY OWNER)
+    public Furniture updateFurnitureByUser(Integer id, Long userId, FurnitureUpdateRequest request) {
+        Furniture furniture = furnitureRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Furniture not found"));
+
+        // Vérifier si le meuble appartient au user
+        if (!furniture.getUserId().equals(userId)) {
+            throw new RuntimeException("You are not the owner of this furniture");
+        }
+
+        // Mise à jour autorisée pour l’utilisateur
+        if (request.getName() != null) {
+            furniture.setName(request.getName());
+        }
+        if (request.getPrice() != null) {
+            furniture.setPrice(request.getPrice());
+        }
+        if (request.getDescription() != null) {
+            furniture.setDescription(request.getDescription());
+        }
+
+        if (request.getTypeId() != null) {
+            Type type = typeRepository.findById(request.getTypeId())
+                    .orElseThrow(() -> new RuntimeException("Type not found"));
+            furniture.setType(type);
+        }
+
+        if (request.getColorId() != null) {
+            Color color = colorRepository.findById(request.getColorId())
+                    .orElseThrow(() -> new RuntimeException("Color not found"));
+            furniture.setColor(color);
+        }
+
+        if (request.getMaterialId() != null) {
+            Material material = materialRepository.findById(request.getMaterialId())
+                    .orElseThrow(() -> new RuntimeException("Material not found"));
+            furniture.setMaterial(material);
+        }
+
+        if (furniture.getStatus() == Furniture.Status.REJECTED
+                || furniture.getStatus() == Furniture.Status.VALIDATED) {
+            furniture.setStatus(Furniture.Status.PENDING);
+        }
+
+        return furnitureRepository.save(furniture);
+    }
+
+
 
     public List<Furniture> getPending() {
         return furnitureRepository.findByStatus(Furniture.Status.PENDING);
@@ -57,27 +135,28 @@ public class FurnitureService {
     }
 
     public List<Furniture> getPublicFurniture() {
-        return furnitureRepository.findByStatusIn(List.of(
+        return furnitureRepository.findWithRelationsByStatusIn(List.of(
                 Furniture.Status.VALIDATED,
                 Furniture.Status.AVAILABLE
         ));
     }
 
+    public List<Furniture> getUserFurniture(Long userId) {
+        return furnitureRepository.findWithRelationsByUserId(userId);
+    }
+
     // -----------------------------
-    // DELETE (SOFT DELETE) — met status = DELETED
+    // DELETE (SOFT DELETE)
     // -----------------------------
     public void softDeleteFurniture(Integer id) {
-
         Furniture furniture = furnitureRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Furniture not found"));
-
         furniture.setStatus(Furniture.Status.DELETED);
-
         furnitureRepository.save(furniture);
     }
 
     // -----------------------------
-    // CREATION D’ANNONCE PAR USER
+    // CREATION D'ANNONCE PAR USER
     // -----------------------------
     public Furniture createFurnitureFromUser(
             String name,
@@ -101,7 +180,6 @@ public class FurnitureService {
             Material material = materialRepository.findById(materialId)
                     .orElseThrow(() -> new RuntimeException("Material not found"));
 
-            // Création du meuble
             Furniture furniture = new Furniture();
             furniture.setName(name);
             furniture.setType(type);
@@ -124,13 +202,11 @@ public class FurnitureService {
             for (MultipartFile file : photos) {
                 String filename = System.currentTimeMillis() + "_" + file.getOriginalFilename();
                 Path filePath = uploadDir.resolve(filename);
-
                 Files.copy(file.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
 
                 Picture picture = new Picture();
                 picture.setUrl(filename);
                 picture.setFurniture(furniture);
-
                 pictureRepository.save(picture);
             }
 
@@ -141,5 +217,4 @@ public class FurnitureService {
             throw new RuntimeException("Error creating furniture: " + e.getMessage());
         }
     }
-
 }

@@ -90,6 +90,7 @@ public class Furniture {
         AVAILABLE,
         RESERVED,
         SOLD,
-        DELETED
+        DELETED,
+        REJECTED
     }
 }
