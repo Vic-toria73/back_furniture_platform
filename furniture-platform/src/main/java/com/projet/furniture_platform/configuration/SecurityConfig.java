@@ -1,6 +1,6 @@
 package com.projet.furniture_platform.configuration;
 
-import com.projet.furniture_platform.Security.JwtAuthenticationFilter;
+import com.projet.furniture_platform.security.JwtAuthenticationFilter;
 import com.projet.furniture_platform.service.CustomUserDetailsService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
@@ -43,23 +43,32 @@ public class SecurityConfig {
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .authorizeHttpRequests(auth -> auth
 
-                        // Authentication publique
-                        .requestMatchers("/api/auth/**").permitAll()
+                                .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
 
-                        // Annonces publiques
-                        .requestMatchers("/api/announcements/**").permitAll()
+                                .requestMatchers("/api/auth/**").permitAll()
+                                .requestMatchers("/uploads/**").permitAll()
+                                .requestMatchers(HttpMethod.GET, "/api/furniture/public/**").permitAll()
+                                .requestMatchers("/api/types/**", "/api/color/**", "/api/material/**").permitAll()
 
-                        // Meubles PUBLIC : catalogue + détail
-                        .requestMatchers(HttpMethod.GET, "/api/furniture/**").permitAll()
+                // USER : peut modifier ses propres furnitures
+                                .requestMatchers(HttpMethod.PUT, "/api/furniture/user/*")
+                                .hasAnyRole("USER", "ADMIN")
 
-                        // Images & types PUBLICS
-                        .requestMatchers("/api/pictures/**").permitAll()
-                        .requestMatchers("/api/types/**").permitAll()
+                // USER : créer
+                                .requestMatchers(HttpMethod.POST, "/api/furniture/create")
+                                .hasAnyRole("USER", "ADMIN")
 
-                        .requestMatchers("/error").permitAll()
+                // USER : routes personnelles
+                                .requestMatchers("/api/furniture/user/**").authenticated()
 
-                        // Tout le reste nécessite une authentification
-                        .anyRequest().authenticated()
+                // ADMIN : gestion complète
+                                .requestMatchers("/api/furniture/admin/**").hasRole("ADMIN")
+                                .requestMatchers(HttpMethod.PATCH, "/api/furniture/*/status").hasRole("ADMIN")
+                                .requestMatchers(HttpMethod.PUT, "/api/furniture/*").hasRole("ADMIN")
+                                .requestMatchers(HttpMethod.DELETE, "/api/furniture/*").hasRole("ADMIN")
+
+                                .anyRequest().authenticated()
+
                 )
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
                 .build();
@@ -82,14 +91,20 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
 
-        // Trim des espaces pour éviter les problèmes
+        // Origines autorisées (depuis application.properties)
         List<String> origins = Arrays.stream(allowedOrigins.split(","))
                 .map(String::trim)
                 .toList();
-
         config.setAllowedOrigins(origins);
-        config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+
+        // Méthodes autorisées
+        config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
+
+        // Headers autorisés
         config.setAllowedHeaders(List.of("*"));
+
+        config.setExposedHeaders(List.of("Authorization"));
+
         config.setAllowCredentials(true);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
@@ -97,4 +112,6 @@ public class SecurityConfig {
 
         return source;
     }
+
+
 }

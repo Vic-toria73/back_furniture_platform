@@ -1,12 +1,17 @@
 package com.projet.furniture_platform.controller;
 
+import com.projet.furniture_platform.DTO.FurnitureUpdateRequest;
 import com.projet.furniture_platform.DTO.StatusRequest;
 import com.projet.furniture_platform.entity.Furniture;
+import com.projet.furniture_platform.security.*;
 import com.projet.furniture_platform.service.FurnitureService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -34,6 +39,56 @@ public class FurnitureController {
         return ResponseEntity.ok(furniture);
     }
 
+    // création d'une annonce
+    @PostMapping(value = "/create", consumes = "multipart/form-data")
+    public ResponseEntity<?> createFurnitureWithImages(
+            @RequestParam("name") String name,
+            @RequestParam("typeId") Integer typeId,
+            @RequestParam("description") String description,
+            @RequestParam("height") String height,
+            @RequestParam("width") String width,
+            @RequestParam("price") String price,
+            @RequestParam("colorId") Integer colorId,
+            @RequestParam("materialId") Integer materialId,
+            @RequestPart("photos") List<MultipartFile> photos
+    ) {
+        CustomUserDetails userDetails =
+                (CustomUserDetails) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+
+        Long userId = userDetails.getId();
+
+        Furniture furniture = furnitureService.createFurnitureFromUser(
+                name, typeId, description, height, width, price, userId, colorId, materialId, photos
+        );
+        return ResponseEntity.ok(furniture);
+    }
+
+    //USER liste des annonces
+    @GetMapping("/user/me")
+    public ResponseEntity<List<Furniture>> getMyFurniture() {
+        CustomUserDetails userDetails =
+                (CustomUserDetails) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+
+        Long userId = userDetails.getId();
+
+        return ResponseEntity.ok(furnitureService.getUserFurniture(userId));
+    }
+
+    // USER : modifier son propre meuble
+    @PutMapping("/user/{id}")
+    public ResponseEntity<?> updateFurnitureByUser(
+            @PathVariable Integer id,
+            @RequestBody FurnitureUpdateRequest request
+    ) {
+        CustomUserDetails userDetails =
+                (CustomUserDetails) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+
+        Long userId = userDetails.getId();
+
+        Furniture updated = furnitureService.updateFurnitureByUser(id, userId, request);
+
+        return ResponseEntity.ok(updated);
+    }
 
     // ------------------ ADMIN ------------------
 
@@ -51,6 +106,7 @@ public class FurnitureController {
         return furnitureService.getAll();
     }
 
+
     // Obtenir un meuble (admin)
     @GetMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
@@ -61,7 +117,7 @@ public class FurnitureController {
     }
 
     // Modifier statut
-    @PatchMapping("/{id}/status")
+    @PostMapping("/{id}/status")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Furniture> updateStatus(
             @PathVariable Integer id,
@@ -83,4 +139,24 @@ public class FurnitureController {
             return ResponseEntity.badRequest().build();
         }
     }
+
+    //Modifier le meuble via la gestion ADMIN
+    @PutMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Furniture> updateFurniture(
+            @PathVariable Integer id,
+            @RequestBody FurnitureUpdateRequest request
+    ) {
+        Furniture updated = furnitureService.updateFurniture(id, request);
+        return ResponseEntity.ok(updated);
+    }
+
+    // Delete une annonce
+    @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Void> deleteFurniture(@PathVariable Integer id) {
+        furnitureService.softDeleteFurniture(id);
+        return ResponseEntity.noContent().build();
+    }
+
 }

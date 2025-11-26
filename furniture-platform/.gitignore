@@ -38,3 +38,8 @@ out/
 ### VS Code ###
 .vscode/
 
+src/main/resources/static/uploads/
+*.jpg
+*.jpeg
+*.png
+*.mp4
